@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer架构图 - 张量形状标注</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 5px solid #3498db;
+        }
+
+        .legend h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .legend-item {
+            display: inline-block;
+            margin: 5px 15px 5px 0;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .tensor-shape { background: #e8f4f8; color: #2980b9; }
+        .operation { background: #e8f8f5; color: #27ae60; }
+        .layer { background: #fef9e7; color: #d68910; }
+        .attention { background: #fdedec; color: #e74c3c; }
+
+        .architecture-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .encoder-section, .decoder-section {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .layer-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .transformer-layer {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .transformer-layer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            border-color: #3498db;
+        }
+
+        .layer-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .sublayer {
+            background: #f1f2f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .sublayer-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .tensor-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.85em;
+        }
+
+        .tensor-step {
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+
+        .input-step { border-left: 4px solid #3498db; }
+        .attention-step { border-left: 4px solid #e74c3c; }
+        .ffn-step { border-left: 4px solid #27ae60; }
+        .output-step { border-left: 4px solid #9b59b6; }
+
+        .shape-tag {
+            background: #2980b9;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 1.5em;
+            color: #7f8c8d;
+            margin: 5px 0;
+        }
+
+        .connection-line {
+            position: absolute;
+            width: 2px;
+            background: #3498db;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .input-embedding, .output-embedding {
+            background: #e8f4f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #3498db;
+        }
+
+        .nx-label {
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .cross-attention {
+            position: relative;
+        }
+
+        .cross-attention::before {
+            content: "来自编码器";
+            position: absolute;
+            right: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #f39c12;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1024px) {
+            .architecture-container {
+                flex-direction: column;
+            }
+
+            .cross-attention::before {
+                display: none;
+            }
+        }
+
+        .note-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .note-box h4 {
+            margin-top: 0;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Transformer架构图</h1>
+        <div class="subtitle">基于"Attention is All You Need"论文 - 详细张量形状标注</div>
+
+        <div class="legend">
+            <h3>📋 符号说明</h3>
+            <div class="legend-item tensor-shape">B = batch_size</div>
+            <div class="legend-item tensor-shape">S_src = 源序列长度</div>
+            <div class="legend-item tensor-shape">S_tgt = 目标序列长度</div>
+            <div class="legend-item tensor-shape">d_model = 512 (模型维度)</div>
+            <div class="legend-item tensor-shape">h = 8 (注意力头数)</div>
+            <div class="legend-item tensor-shape">d_k = 64 (每头维度)</div>
+            <div class="legend-item tensor-shape">d_ff = 2048 (前馈维度)</div>
+            <div class="legend-item tensor-shape">V = 词汇表大小</div>
+        </div>
+
+        <div class="architecture-container">
+            <!-- 编码器部分 -->
+            <div class="encoder-section">
+                <div class="section-title">🔢 编码器 (Encoder)</div>
+
+                <div class="input-embedding">
+                    <div class="sublayer-title">📝 输入处理</div>
+                    <div class="tensor-flow">
+                        <div class="tensor-step input-step">
+                            输入Token ID <span class="shape-tag">[B, S_src]</span>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="tensor-step input-step">
+                            词嵌入 × √d_model <span class="shape-tag">[B, S_src, d_model]</span>
+                        </div>
+                        <div class="arrow">+</div>
+                        <div class="tensor-step input-step">
+                            位置编码 <span class="shape-tag">[B, S_src, d_model]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer-stack">
+                    <div class="transformer-layer">
+                        <div class="nx-label">N×6</div>
+                        <div class="layer-name">🏗️ 编码器层</div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🔄 多头自注意力</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step attention-step">
+                                    输入 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    Q,K,V变换 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    多头重塑 <span class="shape-tag">[B, h, S_src, d_k]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    注意力权重 <span class="shape-tag">[B, h, S_src, S_src]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    拼接输出 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step output-step">
+                                    残差 + 层归一化 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🧠 前馈网络</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step ffn-step">
+                                    第一层 + ReLU <span class="shape-tag">[B, S_src, d_ff]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step ffn-step">
+                                    第二层 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step output-step">
+                                    残差 + 层归一化 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-embedding">
+                    <div class="sublayer-title">📤 编码器输出</div>
+                    <div class="tensor-flow">
+                        <div class="tensor-step output-step">
+                            Memory (K,V) <span class="shape-tag">[B, S_src, d_model]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 解码器部分 -->
+            <div class="decoder-section">
+                <div class="section-title">🎯 解码器 (Decoder)</div>
+
+                <div class="output-embedding">
+                    <div class="sublayer-title">📝 输出处理</div>
+                    <div class="tensor-flow">
+                        <div class="tensor-step input-step">
+                            输出Token ID (右移) <span class="shape-tag">[B, S_tgt]</span>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="tensor-step input-step">
+                            词嵌入 × √d_model <span class="shape-tag">[B, S_tgt, d_model]</span>
+                        </div>
+                        <div class="arrow">+</div>
+                        <div class="tensor-step input-step">
+                            位置编码 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer-stack">
+                    <div class="transformer-layer">
+                        <div class="nx-label">N×6</div>
+                        <div class="layer-name">🏗️ 解码器层</div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🔒 掩码多头自注意力</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step attention-step">
+                                    输入 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    Q,K,V变换 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    多头重塑 <span class="shape-tag">[B, h, S_tgt, d_k]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    掩码注意力 <span class="shape-tag">[B, h, S_tgt, S_tgt]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    拼接输出 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step output-step">
+                                    残差 + 层归一化 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer cross-attention">
+                            <div class="sublayer-title">🔄 编码器-解码器注意力</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step attention-step">
+                                    Q来自解码器 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                                <div class="tensor-step attention-step">
+                                    K,V来自编码器 <span class="shape-tag">[B, S_src, d_model]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    多头重塑 Q<span class="shape-tag">[B, h, S_tgt, d_k]</span>
+                                </div>
+                                <div class="tensor-step attention-step">
+                                    多头重塑 K,V<span class="shape-tag">[B, h, S_src, d_k]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    交叉注意力 <span class="shape-tag">[B, h, S_tgt, S_src]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step attention-step">
+                                    拼接输出 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step output-step">
+                                    残差 + 层归一化 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🧠 前馈网络</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step ffn-step">
+                                    第一层 + ReLU <span class="shape-tag">[B, S_tgt, d_ff]</span>
+                                </div>
+                                <div class="arrow">↓</div>
+                                <div class="tensor-step ffn-step">
+                                    第二层 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="tensor-flow">
+                                <div class="tensor-step output-step">
+                                    残差 + 层归一化 <span class="shape-tag">[B, S_tgt, d_model]</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="output-embedding">
+                    <div class="sublayer-title">📤 输出投影</div>
+                    <div class="tensor-flow">
+                        <div class="tensor-step output-step">
+                            线性投影 <span class="shape-tag">[B, S_tgt, V]</span>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="tensor-step output-step">
+                            Softmax概率 <span class="shape-tag">[B, S_tgt, V]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note-box">
+            <h4>🔍 关键技术细节</h4>
+            <ul>
+                <li><strong>多头注意力：</strong> 将 d_model 分割为 h 个 d_k 维度的头，并行计算注意力</li>
+                <li><strong>位置编码：</strong> 使用正弦和余弦函数为每个位置生成唯一编码</li>
+                <li><strong>残差连接：</strong> 每个子层都有残差连接，帮助梯度流动和训练稳定性</li>
+                <li><strong>层归一化：</strong> 在每个残差连接后进行层归一化，加速收敛</li>
+                <li><strong>掩码机制：</strong> 解码器使用下三角掩码防止看到未来信息</li>
+                <li><strong>权重共享：</strong> 输出嵌入层和输出投影层共享权重参数</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer架构图 - 详细计算过程</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 5px solid #3498db;
+        }
+
+        .legend h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .legend-item {
+            display: inline-block;
+            margin: 5px 15px 5px 0;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .tensor-shape { background: #e8f4f8; color: #2980b9; }
+        .operation { background: #e8f8f5; color: #27ae60; }
+
+        .architecture-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .encoder-section, .decoder-section {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .layer-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .transformer-layer {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .transformer-layer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            border-color: #3498db;
+        }
+
+        .layer-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .sublayer {
+            background: #f1f2f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .sublayer-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .computation-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.8em;
+        }
+
+        .computation-step {
+            background: white;
+            border-radius: 6px;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .tensor-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 5px;
+            font-size: 0.75em;
+        }
+
+        .tensor-var {
+            background: #3498db;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .tensor-shape-info {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .input-step { border-left: 4px solid #3498db; }
+        .attention-step { border-left: 4px solid #e74c3c; }
+        .ffn-step { border-left: 4px solid #27ae60; }
+        .output-step { border-left: 4px solid #9b59b6; }
+
+        .arrow {
+            text-align: center;
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin: 3px 0;
+        }
+
+        .input-embedding, .output-embedding {
+            background: #e8f4f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #3498db;
+        }
+
+        .nx-label {
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .cross-attention {
+            position: relative;
+            border: 2px dashed #f39c12;
+        }
+
+        .cross-attention::before {
+            content: "来自编码器输出";
+            position: absolute;
+            right: -90px;
+            top: 10px;
+            background: #f39c12;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7em;
+            white-space: nowrap;
+        }
+
+        .matrix-mult {
+            background: #8e44ad;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 0 3px;
+        }
+
+        .softmax-op {
+            background: #e67e22;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 0 3px;
+        }
+
+        .relu-op {
+            background: #27ae60;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 0 3px;
+        }
+
+        .layernorm-op {
+            background: #34495e;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 0 3px;
+        }
+
+        @media (max-width: 1200px) {
+            .architecture-container {
+                flex-direction: column;
+            }
+
+            .cross-attention::before {
+                position: relative;
+                right: auto;
+                top: auto;
+                display: block;
+                margin-bottom: 8px;
+            }
+        }
+
+        .note-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .note-box h4 {
+            margin-top: 0;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Transformer架构图</h1>
+        <div class="subtitle">详细计算过程与张量形状 - "Attention is All You Need"</div>
+
+        <div class="legend">
+            <h3>📋 符号说明</h3>
+            <div class="legend-item tensor-shape">B = batch_size</div>
+            <div class="legend-item tensor-shape">S_src = 源序列长度</div>
+            <div class="legend-item tensor-shape">S_tgt = 目标序列长度</div>
+            <div class="legend-item tensor-shape">d_model = 512</div>
+            <div class="legend-item tensor-shape">h = 8 (注意力头数)</div>
+            <div class="legend-item tensor-shape">d_k = d_v = 64</div>
+            <div class="legend-item tensor-shape">d_ff = 2048</div>
+            <div class="legend-item tensor-shape">V = 词汇表大小</div>
+        </div>
+
+        <div class="architecture-container">
+            <!-- 编码器部分 -->
+            <div class="encoder-section">
+                <div class="section-title">🔢 编码器 (Encoder)</div>
+
+                <div class="input-embedding">
+                    <div class="sublayer-title">📝 输入处理</div>
+                    <div class="computation-flow">
+                        <div class="computation-step input-step">
+                            <div class="formula">输入: tokens</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">tokens</div>
+                                <div class="tensor-shape-info">[B, S_src]</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow">↓</div>
+
+                        <div class="computation-step input-step">
+                            <div class="formula">embed = E[tokens] × √d_model</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">E</div>
+                                <div class="tensor-shape-info">[V, d_model]</div>
+                                <div class="tensor-var">embed</div>
+                                <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow">+</div>
+
+                        <div class="computation-step input-step">
+                            <div class="formula">PE(pos,2i) = sin(pos/10000^(2i/d_model))</div>
+                            <div class="formula">PE(pos,2i+1) = cos(pos/10000^(2i/d_model))</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">PE</div>
+                                <div class="tensor-shape-info">[1, S_src, d_model]</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow">↓</div>
+
+                        <div class="computation-step input-step">
+                            <div class="formula">X = embed + PE</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">X</div>
+                                <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer-stack">
+                    <div class="transformer-layer">
+                        <div class="nx-label">N×6</div>
+                        <div class="layer-name">🏗️ 编码器层</div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🔄 多头自注意力</div>
+                            <div class="computation-flow">
+                                <div class="computation-step attention-step">
+                                    <div class="formula">Q = X × W_Q, K = X × W_K, V = X × W_V</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">X</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                        <div class="tensor-var">W_Q,W_K,W_V</div>
+                                        <div class="tensor-shape-info">[d_model, d_model]</div>
+                                        <div class="tensor-var">Q,K,V</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">Q,K,V → reshape → [B, S_src, h, d_k] → transpose → [B, h, S_src, d_k]</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Q,K,V (multi-head)</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, d_k]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">scores = (Q × K^T) / √d_k</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Q</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, d_k]</div>
+                                        <div class="tensor-var">K^T</div>
+                                        <div class="tensor-shape-info">[B, h, d_k, S_src]</div>
+                                        <div class="tensor-var">scores</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, S_src]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">attn_weights = <span class="softmax-op">Softmax</span>(scores)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">attn_weights</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, S_src]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">head_out = attn_weights × V</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">attn_weights</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, S_src]</div>
+                                        <div class="tensor-var">V</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, d_k]</div>
+                                        <div class="tensor-var">head_out</div>
+                                        <div class="tensor-shape-info">[B, h, S_src, d_k]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">concat_out = Concat(head_out) × W_O</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">concat_out</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                        <div class="tensor-var">W_O</div>
+                                        <div class="tensor-shape-info">[d_model, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="computation-flow">
+                                <div class="computation-step output-step">
+                                    <div class="formula">X₁ = <span class="layernorm-op">LayerNorm</span>(X + concat_out)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">X₁</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🧠 前馈网络</div>
+                            <div class="computation-flow">
+                                <div class="computation-step ffn-step">
+                                    <div class="formula">hidden = <span class="relu-op">ReLU</span>(X₁ × W₁ + b₁)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">X₁</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                        <div class="tensor-var">W₁</div>
+                                        <div class="tensor-shape-info">[d_model, d_ff]</div>
+                                        <div class="tensor-var">b₁</div>
+                                        <div class="tensor-shape-info">[d_ff]</div>
+                                        <div class="tensor-var">hidden</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_ff]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step ffn-step">
+                                    <div class="formula">ffn_out = hidden × W₂ + b₂</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">W₂</div>
+                                        <div class="tensor-shape-info">[d_ff, d_model]</div>
+                                        <div class="tensor-var">b₂</div>
+                                        <div class="tensor-shape-info">[d_model]</div>
+                                        <div class="tensor-var">ffn_out</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="computation-flow">
+                                <div class="computation-step output-step">
+                                    <div class="formula">X₂ = <span class="layernorm-op">LayerNorm</span>(X₁ + ffn_out)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">X₂</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-embedding">
+                    <div class="sublayer-title">📤 编码器输出</div>
+                    <div class="computation-flow">
+                        <div class="computation-step output-step">
+                            <div class="formula">Memory = X₂ (最终编码器层输出)</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">Memory</div>
+                                <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 解码器部分 -->
+            <div class="decoder-section">
+                <div class="section-title">🎯 解码器 (Decoder)</div>
+
+                <div class="output-embedding">
+                    <div class="sublayer-title">📝 输出处理</div>
+                    <div class="computation-flow">
+                        <div class="computation-step input-step">
+                            <div class="formula">输入: tgt_tokens (右移)</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">tgt_tokens</div>
+                                <div class="tensor-shape-info">[B, S_tgt]</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow">↓</div>
+
+                        <div class="computation-step input-step">
+                            <div class="formula">tgt_embed = E[tgt_tokens] × √d_model</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">E</div>
+                                <div class="tensor-shape-info">[V, d_model]</div>
+                                <div class="tensor-var">tgt_embed</div>
+                                <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow">+</div>
+
+                        <div class="computation-step input-step">
+                            <div class="formula">Y = tgt_embed + PE</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">Y</div>
+                                <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer-stack">
+                    <div class="transformer-layer">
+                        <div class="nx-label">N×6</div>
+                        <div class="layer-name">🏗️ 解码器层</div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🔒 掩码多头自注意力</div>
+                            <div class="computation-flow">
+                                <div class="computation-step attention-step">
+                                    <div class="formula">Q = Y × W_Q, K = Y × W_K, V = Y × W_V</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Q,K,V</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">Q,K,V → [B, h, S_tgt, d_k]</div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">scores = (Q × K^T) / √d_k + mask</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">mask</div>
+                                        <div class="tensor-shape-info">[S_tgt, S_tgt] (下三角)</div>
+                                        <div class="tensor-var">scores</div>
+                                        <div class="tensor-shape-info">[B, h, S_tgt, S_tgt]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">masked_attn_out = <span class="softmax-op">Softmax</span>(scores) × V</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">masked_attn_out</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="computation-flow">
+                                <div class="computation-step output-step">
+                                    <div class="formula">Y₁ = <span class="layernorm-op">LayerNorm</span>(Y + masked_attn_out)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Y₁</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer cross-attention">
+                            <div class="sublayer-title">🔄 编码器-解码器注意力</div>
+                            <div class="computation-flow">
+                                <div class="computation-step attention-step">
+                                    <div class="formula">Q = Y₁ × W_Q</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Q</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">K = Memory × W_K, V = Memory × W_V</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Memory</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                        <div class="tensor-var">K,V</div>
+                                        <div class="tensor-shape-info">[B, S_src, d_model]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">Q → [B, h, S_tgt, d_k], K,V → [B, h, S_src, d_k]</div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">cross_scores = (Q × K^T) / √d_k</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">cross_scores</div>
+                                        <div class="tensor-shape-info">[B, h, S_tgt, S_src]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step attention-step">
+                                    <div class="formula">cross_attn_out = <span class="softmax-op">Softmax</span>(cross_scores) × V</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">cross_attn_out</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="computation-flow">
+                                <div class="computation-step output-step">
+                                    <div class="formula">Y₂ = <span class="layernorm-op">LayerNorm</span>(Y₁ + cross_attn_out)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Y₂</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">🧠 前馈网络</div>
+                            <div class="computation-flow">
+                                <div class="computation-step ffn-step">
+                                    <div class="formula">hidden = <span class="relu-op">ReLU</span>(Y₂ × W₁ + b₁)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Y₂</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                        <div class="tensor-var">W₁</div>
+                                        <div class="tensor-shape-info">[d_model, d_ff]</div>
+                                        <div class="tensor-var">hidden</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_ff]</div>
+                                    </div>
+                                </div>
+
+                                <div class="arrow">↓</div>
+
+                                <div class="computation-step ffn-step">
+                                    <div class="formula">ffn_out = hidden × W₂ + b₂</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">W₂</div>
+                                        <div class="tensor-shape-info">[d_ff, d_model]</div>
+                                        <div class="tensor-var">ffn_out</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sublayer">
+                            <div class="sublayer-title">⚡ Add & Norm</div>
+                            <div class="computation-flow">
+                                <div class="computation-step output-step">
+                                    <div class="formula">Y₃ = <span class="layernorm-op">LayerNorm</span>(Y₂ + ffn_out)</div>
+                                    <div class="tensor-info">
+                                        <div class="tensor-var">Y₃</div>
+                                        <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="output-embedding">
+                    <div class="sublayer-title">📤 输出投影</div>
+                    <div class="computation-flow">
+                        <div class="computation-step output-step">
+                            <div class="formula">logits = Y₃ × W_out</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">Y₃</div>
+                                <div class="tensor-shape-info">[B, S_tgt, d_model]</div>
+                                <div class="tensor-var">W_out</div>
+                                <div class="tensor-shape-info">[d_model, V]</div>
+                                <div class="tensor-var">logits</div>
+                                <div class="tensor-shape-info">[B, S_tgt, V]</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow">↓</div>
+
+                        <div class="computation-step output-step">
+                            <div class="formula">probs = <span class="softmax-op">Softmax</span>(logits)</div>
+                            <div class="tensor-info">
+                                <div class="tensor-var">probs</div>
+                                <div class="tensor-shape-info">[B, S_tgt, V]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note-box">
+            <h4>🔍 关键计算公式详解</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div>
+                    <h5>🎯 注意力机制核心公式:</h5>
+                    <div class="formula">Attention(Q,K,V) = Softmax(QK^T/√d_k)V</div>
+                    <ul style="font-size: 0.9em; margin-top: 10px;">
+                        <li>Q: 查询矩阵 [B, h, S_q, d_k]</li>
+                        <li>K: 键矩阵 [B, h, S_k, d_k]</li>
+                        <li>V: 值矩阵 [B, h, S_v, d_k]</li>
+                        <li>√d_k: 缩放因子，防止softmax饱和</li>
+                    </ul>
+                </div>
+                <div>
+                    <h5>🔄 多头注意力:</h5>
+                    <div class="formula">MultiHead(Q,K,V) = Concat(head₁,...,head_h)W^O</div>
+                    <div class="formula">head_i = Attention(QW^Q_i, KW^K_i, VW^V_i)</div>
+                    <ul style="font-size: 0.9em; margin-top: 10px;">
+                        <li>h = 8 个并行的注意力头</li>
+                        <li>每个头处理 d_k = d_model/h = 64 维</li>
+                        <li>最后拼接并投影回 d_model 维</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div>
+                    <h5>🧠 位置前馈网络:</h5>
+                    <div class="formula">FFN(x) = max(0, xW₁ + b₁)W₂ + b₂</div>
+                    <ul style="font-size: 0.9em; margin-top: 10px;">
+                        <li>第一层: [d_model] → [d_ff] (2048维)</li>
+                        <li>ReLU激活函数</li>
+                        <li>第二层: [d_ff] → [d_model]</li>
+                    </ul>
+                </div>
+                <div>
+                    <h5>📏 层归一化:</h5>
+                    <div class="formula">LayerNorm(x) = γ × (x-μ)/σ + β</div>
+                    <ul style="font-size: 0.9em; margin-top: 10px;">
+                        <li>μ: 输入的均值</li>
+                        <li>σ: 输入的标准差</li>
+                        <li>γ,β: 可学习的缩放和偏移参数</li>
+                        <li>归一化在最后一个维度(d_model)上进行</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <h5>🎭 掩码机制:</h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div>
+                        <strong>编码器自注意力:</strong>
+                        <div class="formula">mask = None (全连接)</div>
+                    </div>
+                    <div>
+                        <strong>解码器自注意力:</strong>
+                        <div class="formula">mask[i,j] = 0 if j > i (下三角)</div>
+                    </div>
+                    <div>
+                        <strong>交叉注意力:</strong>
+                        <div class="formula">mask = padding_mask (可选)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <h5>📊 关键技术点:</h5>
+                <ul style="font-size: 0.9em; columns: 2; column-gap: 20px;">
+                    <li><strong>权重共享:</strong> 输出嵌入层与输出投影层共享权重 W_out = E^T</li>
+                    <li><strong>词嵌入缩放:</strong> 嵌入向量乘以√d_model 提升训练稳定性</li>
+                    <li><strong>残差连接:</strong> 每个子层都有 x + SubLayer(x) 的残差连接</li>
+                    <li><strong>Dropout:</strong> 注意力权重、前馈网络、嵌入层都应用dropout</li>
+                    <li><strong>位置编码:</strong> 使用固定的正弦余弦函数编码位置信息</li>
+                    <li><strong>学习率调度:</strong> 论文使用特殊的warmup学习率调度策略</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
