@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDPM完整网络架构图</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #333;
+            overflow-x: auto;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            min-width: 1600px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .main-diagram {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 20px;
+            margin: 20px 0;
+            min-height: 1200px;
+        }
+
+        .process-section {
+            border: 3px solid;
+            border-radius: 15px;
+            padding: 20px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .forward-process {
+            grid-column: 1;
+            grid-row: 1;
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+        }
+
+        .reverse-process {
+            grid-column: 1;
+            grid-row: 2;
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+        }
+
+        .unet-detail {
+            grid-column: 2;
+            grid-row: 1 / 4;
+            border-color: #3498db;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            max-height: 1200px;
+            overflow-y: auto;
+        }
+
+        .training-detail {
+            grid-column: 1;
+            grid-row: 3;
+            border-color: #9b59b6;
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+        }
+
+        .tensor-box {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .tensor-box:hover {
+            transform: scale(1.05);
+        }
+
+        .operation-box {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .operation-box:hover {
+            transform: scale(1.05);
+        }
+
+        .layer-box {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .layer-box:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .attention-box {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 6px 0;
+            font-size: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .attention-box:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .time-embed-box {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            color: #333;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 6px 0;
+            font-size: 10px;
+            font-weight: bold;
+            border: 2px solid #f39c12;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .time-embed-box:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px rgba(243, 156, 18, 0.3);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            border-bottom: 2px solid rgba(44, 62, 80, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .math-formula {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            border-left: 4px solid #3498db;
+            margin: 8px 0;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 10px 0;
+            gap: 5px;
+        }
+
+        .arrow-symbol {
+            font-size: 20px;
+            color: #34495e;
+            font-weight: bold;
+            margin: 0 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .legend {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #bdc3c7;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 1000;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .tooltip:hover::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #2c3e50;
+            z-index: 1001;
+        }
+
+        .interactive-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .interactive-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .interactive-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .interactive-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: width 0.3s ease, height 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .interactive-btn:active::before {
+            width: 100px;
+            height: 100px;
+        }
+
+        .btn-forward { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .btn-reverse { background: linear-gradient(135deg, #27ae60, #229954); }
+        .btn-unet { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .btn-reset { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
+
+        .highlighted {
+            box-shadow: 0 0 30px rgba(52, 152, 219, 0.8) !important;
+            transform: scale(1.02) !important;
+            z-index: 10;
+        }
+
+        .dimmed {
+            opacity: 0.3 !important;
+            transform: scale(0.98) !important;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            z-index: 5;
+            animation: flow 2s ease-in-out infinite;
+        }
+
+        @keyframes flow {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+
+        .unet-layers {
+            max-height: 800px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .unet-layers::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .unet-layers::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .unet-layers::-webkit-scrollbar-thumb {
+            background: rgba(52, 152, 219, 0.6);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 DDPM (Denoising Diffusion Probabilistic Models) 完整网络架构图</h1>
+
+        <div class="main-diagram">
+            <!-- Forward Process -->
+            <div class="process-section forward-process" id="forward-section">
+                <div class="section-title">📈 前向扩散过程 (Forward Diffusion Process)</div>
+                <div class="math-formula">q(x₁:T|x₀) = ∏ᵗᵢ₌₁ q(xᵢ|xᵢ₋₁)</div>
+
+                <div class="flow-container">
+                    <span class="tensor-box tooltip" data-tooltip="原始清晰图像，RGB格式">x₀: [4,3,64,64]</span>
+                    <span class="operation-box tooltip" data-tooltip="添加高斯噪声">+ √βₜ·ε</span>
+                    <span class="tensor-box tooltip" data-tooltip="标准高斯噪声">ε~𝒩(0,I): [4,3,64,64]</span>
+                </div>
+
+                <div class="flow-container">
+                    <span class="tensor-box">x₁: [4,3,64,64]</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="tensor-box">x₂: [4,3,64,64]</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="tensor-box">...</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="tensor-box tooltip" data-tooltip="时间步t的噪声图像">xₜ: [4,3,64,64]</span>
+                </div>
+
+                <div class="math-formula">
+                    <strong>重参数化技巧:</strong><br>
+                    xₜ = √α̅ₜ·x₀ + √(1-α̅ₜ)·ε<br>
+                    其中: α̅ₜ = ∏ᵢ₌₁ᵗ αᵢ, αₜ = 1-βₜ<br>
+                    噪声调度: β₁=1e-4 → βₜ=0.02 (线性)
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <strong>张量操作详解:</strong>
+                    <div class="grid-container">
+                        <div class="tensor-box tooltip" data-tooltip="批量大小4">B = 4</div>
+                        <div class="tensor-box tooltip" data-tooltip="RGB三通道">C = 3</div>
+                        <div class="tensor-box tooltip" data-tooltip="图像高度">H = 64</div>
+                        <div class="tensor-box tooltip" data-tooltip="图像宽度">W = 64</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reverse Process -->
+            <div class="process-section reverse-process" id="reverse-section">
+                <div class="section-title">📉 反向去噪过程 (Reverse Denoising Process)</div>
+                <div class="math-formula">pθ(x₀:T) = p(xₜ)∏ᵗᵢ₌₁ pθ(xᵢ₋₁|xᵢ)</div>
+
+                <div class="flow-container">
+                    <span class="tensor-box tooltip" data-tooltip="含噪声的输入">xₜ: [4,3,64,64]</span>
+                    <span class="arrow-symbol">+</span>
+                    <span class="tensor-box tooltip" data-tooltip="时间步信息">t: [4,]</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box tooltip" data-tooltip="U-Net噪声预测网络">εθ(xₜ,t)</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="tensor-box tooltip" data-tooltip="预测的噪声">ε̂: [4,3,64,64]</span>
+                </div>
+
+                <div class="flow-container">
+                    <span class="tensor-box">t: [4,]</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box">Sinusoidal</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="tensor-box">t_sin: [4,128]</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box">MLP</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="tensor-box">t_emb: [4,512]</span>
+                </div>
+
+                <div class="math-formula">
+                    <strong>损失函数 (简化目标):</strong><br>
+                    L_simple = 𝔼ₜ,x₀,ε [||ε - εθ(√α̅ₜ·x₀ + √(1-α̅ₜ)·ε, t)||²]<br><br>
+
+                    <strong>去噪采样:</strong><br>
+                    μₜ = (xₜ - βₜ/√(1-α̅ₜ)·εθ(xₜ,t))/√αₜ<br>
+                    xₜ₋₁ = μₜ + σₜ·z, z~𝒩(0,I)
+                </div>
+            </div>
+
+            <!-- Training Detail -->
+            <div class="process-section training-detail" id="training-section">
+                <div class="section-title">🎓 训练过程 (Training Procedure)</div>
+
+                <div class="flow-container">
+                    <span class="operation-box">Sample x₀</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box">Sample t,ε</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box">Forward xₜ</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box">Predict ε̂</span>
+                    <span class="arrow-symbol">→</span>
+                    <span class="operation-box">Compute Loss</span>
+                </div>
+
+                <div class="math-formula">
+                    <strong>训练算法:</strong><br>
+                    1. x₀ ~ q(x₀) - 从数据集采样<br>
+                    2. t ~ Uniform(1,T) - 随机时间步<br>
+                    3. ε ~ 𝒩(0,I) - 采样噪声<br>
+                    4. xₜ = √α̅ₜ·x₀ + √(1-α̅ₜ)·ε - 前向扩散<br>
+                    5. ε̂ = εθ(xₜ,t) - 网络预测<br>
+                    6. L = ||ε - ε̂||² - 计算损失<br>
+                    7. θ ← θ - η∇θL - 梯度更新
+                </div>
+
+                <div class="grid-container">
+                    <div class="tensor-box">学习率: η=2e-4</div>
+                    <div class="tensor-box">时间步: T=1000</div>
+                    <div class="tensor-box">批量大小: B=4</div>
+                    <div class="tensor-box">优化器: Adam</div>
+                </div>
+            </div>
+
+            <!-- U-Net Detailed Architecture -->
+            <div class="process-section unet-detail" id="unet-section">
+                <div class="section-title">🏗️ U-Net εθ 详细架构</div>
+
+                <div class="unet-layers">
+                    <!-- Time Embedding -->
+                    <div class="time-embed-box tooltip" data-tooltip="将时间步t编码为高维向量">
+                        <strong>🕐 时间嵌入层 (Time Embedding)</strong><br>
+                        输入: t [4,] (整数时间步)<br>
+                        ↓<br>
+                        Sinusoidal位置编码: t → [4,128]<br>
+                        公式: PE(t,2i) = sin(t/10000^(2i/128))<br>
+                        ↓<br>
+                        Linear1: [4,128] × W₁[128,512] + b₁[512] → [4,512]<br>
+                        ↓<br>
+                        SiLU激活: x·sigmoid(x) → [4,512]<br>
+                        ↓<br>
+                        Linear2: [4,512] × W₂[512,512] + b₂[512] → [4,512]<br>
+                        输出: t_emb [4,512]
+                    </div>
+
+                    <!-- Input Layer -->
+                    <div class="layer-box tooltip" data-tooltip="输入卷积层，增加通道数">
+                        <strong>📥 输入层 (Input Conv)</strong><br>
+                        输入: xₜ [4,3,64,64]<br>
+                        Conv2d: [4,3,64,64] * W[128,3,3,3] + b[128]<br>
+                        → h₀ [4,128,64,64] (padding=1, stride=1)
+                    </div>
+
+                    <!-- Encoder Path -->
+                    <div style="border-left: 4px solid #e74c3c; padding-left: 15px; margin: 15px 0;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px;">🔽 编码器路径 (Encoder)</h4>
+
+                        <div class="layer-box tooltip" data-tooltip="第一个编码块，维持分辨率">
+                            <strong>Encoder Block 1 (64×64)</strong><br>
+                            输入: h₀ [4,128,64,64]<br>
+                            ResNetBlock: {<br>
+                            　GroupNorm → SiLU → Conv3×3 → [4,128,64,64]<br>
+                            　+ t_emb投影: [4,512] → Linear → [4,128] → [4,128,1,1]<br>
+                            　GroupNorm → SiLU → Conv3×3 → [4,128,64,64]<br>
+                            　+ 残差连接<br>
+                            }<br>
+                            输出: h₁ [4,128,64,64] <strong style="color: #f39c12;">(保存skip₁)</strong>
+                        </div>
+
+                        <div class="attention-box tooltip" data-tooltip="空间自注意力，建立长程依赖">
+                            <strong>🎯 Self-Attention (64×64)</strong><br>
+                            输入: h₁ [4,128,64,64]<br>
+                            Reshape: [4,128,4096] → Transpose: [4,4096,128]<br>
+                            Q,K,V = Linear: [4,4096,128] → 3×[4,4096,128]<br>
+                            MultiHead(heads=8): [4,4096,8,16]<br>
+                            Attention: softmax(QK^T/√16)V → [4,4096,128]<br>
+                            输出: [4,128,64,64]
+                        </div>
+
+                        <div class="layer-box tooltip" data-tooltip="下采样到32×32，增加通道数">
+                            <strong>Encoder Block 2 (32×32)</strong><br>
+                            输入: h₁ [4,128,64,64]<br>
+                            ResNetBlock → [4,256,64,64]<br>
+                            + t_emb: [4,512] → [4,256] → [4,256,1,1]<br>
+                            Downsample: AvgPool2d(2) → h₂ [4,256,32,32]<br>
+                            <strong style="color: #f39c12;">(保存skip₂)</strong>
+                        </div>
+
+                        <div class="layer-box tooltip" data-tooltip="继续下采样到16×16">
+                            <strong>Encoder Block 3 (16×16)</strong><br>
+                            输入: h₂ [4,256,32,32]<br>
+                            ResNetBlock → [4,512,32,32]<br>
+                            + t_emb: [4,512] → [4,512] → [4,512,1,1]<br>
+                            Downsample: AvgPool2d(2) → h₃ [4,512,16,16]<br>
+                            <strong style="color: #f39c12;">(保存skip₃)</strong>
+                        </div>
+
+                        <div class="layer-box tooltip" data-tooltip="最后下采样到8×8">
+                            <strong>Encoder Block 4 (8×8)</strong><br>
+                            输入: h₃ [4,512,16,16]<br>
+                            ResNetBlock → [4,512,16,16]<br>
+                            + t_emb: [4,512] → [4,512] → [4,512,1,1]<br>
+                            Downsample: AvgPool2d(2) → h₄ [4,512,8,8]<br>
+                            <strong style="color: #f39c12;">(保存skip₄)</strong>
+                        </div>
+                    </div>
+
+                    <!-- Bottleneck -->
+                    <div style="border-left: 4px solid #f39c12; padding-left: 15px; margin: 15px 0;">
+                        <h4 style="color: #f39c12; margin-bottom: 10px;">⚡ 瓶颈层 (Bottleneck)</h4>
+
+                        <div class="layer-box tooltip" data-tooltip="最深层特征处理" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                            <strong>Middle Processing (8×8)</strong><br>
+                            输入: h₄ [4,512,8,8]<br>
+                            ↓<br>
+                            ResNetBlock1: {<br>
+                            　GroupNorm([4,512,8,8]) → SiLU<br>
+                            　Conv3×3: [4,512,8,8] * W[512,512,3,3] → [4,512,8,8]<br>
+                            　+ t_emb注入: [4,512] → [4,512,1,1]<br>
+                            　GroupNorm → SiLU → Conv3×3<br>
+                            　+ 残差连接<br>
+                            }<br>
+                            ↓<br>
+                            Self-Attention: [4,512,64] → QKV → [4,512,64]<br>
+                            ↓<br>
+                            ResNetBlock2: 同上结构<br>
+                            输出: m [4,512,8,8]
+                        </div>
+                    </div>
+
+                    <!-- Decoder Path -->
+                    <div style="border-left: 4px solid #27ae60; padding-left: 15px; margin: 15px 0;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px;">🔼 解码器路径 (Decoder)</h4>
+
+                        <div class="layer-box tooltip" data-tooltip="上采样到16×16，融合skip连接">
+                            <strong>Decoder Block 1 (16×16)</strong><br>
+                            输入: m [4,512,8,8]<br>
+                            Upsample: Interpolate(scale=2) → [4,512,16,16]<br>
+                            Skip连接: concat(up, skip₄) → [4,1024,16,16]<br>
+                            Conv1×1: [4,1024,16,16] * W[512,1024,1,1] → [4,512,16,16]<br>
+                            ResNetBlock + t_emb → d₁ [4,512,16,16]
+                        </div>
+
+                        <div class="layer-box tooltip" data-tooltip="上采样到32×32，减少通道数">
+                            <strong>Decoder Block 2 (32×32)</strong><br>
+                            输入: d₁ [4,512,16,16]<br>
+                            Upsample: Interpolate(scale=2) → [4,512,32,32]<br>
+                            Skip连接: concat(up, skip₃) → [4,1024,32,32]<br>
+                            Conv1×1: [4,1024,32,32] * W[256,1024,1,1] → [4,256,32,32]<br>
+                            ResNetBlock + t_emb → d₂ [4,256,32,32]
+                        </div>
+
+                        <div class="layer-box tooltip" data-tooltip="上采样到64×64，进一步减少通道">
+                            <strong>Decoder Block 3 (64×64)</strong><br>
+                            输入: d₂ [4,256,32,32]<br>
+                            Upsample: Interpolate(scale=2) → [4,256,64,64]<br>
+                            Skip连接: concat(up, skip₂) → [4,512,64,64]<br>
+                            Conv1×1: [4,512,64,64] * W[128,512,1,1] → [4,128,64,64]<br>
+                            ResNetBlock + t_emb → d₃ [4,128,64,64]
+                        </div>
+
+                        <div class="attention-box tooltip" data-tooltip="最终层前的注意力机制">
+                            <strong>🎯 Final Self-Attention (64×64)</strong><br>
+                            输入: d₃ [4,128,64,64]<br>
+                            Same as encoder attention → [4,128,64,64]
+                        </div>
+
+                        <div class="layer-box tooltip" data-tooltip="最终输出层，预测噪声">
+                            <strong>Final Output Layer</strong><br>
+                            输入: d₃ [4,128,64,64]<br>
+                            Skip连接: concat(d₃, skip₁) → [4,256,64,64]<br>
+                            GroupNorm: groups=8 → [4,256,64,64]<br>
+                            SiLU: [4,256,64,64] → [4,256,64,64]<br>
+                            Conv2d: [4,256,64,64] * W[3,256,3,3] + b[3]<br>
+                            → <strong style="color: #e74c3c;">ε̂ [4,3,64,64]</strong> (预测噪声)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Tensor Operations -->
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 25px; border-radius: 15px;">
+            <h2 style="margin-bottom: 20px;">🔍 关键张量操作详解</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                <div>
+                    <h3>🧮 ResNet块张量流动</h3>
+                    <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; font-family: monospace; font-size: 10px; line-height: 1.5;">
+                        <strong>输入:</strong> x [B, C_in, H, W]<br>
+                        <strong>权重:</strong> W₁[C_out, C_in, 3, 3], b₁[C_out]<br>
+                        <strong>时间嵌入:</strong> t_emb [B, 512]<br><br>
+
+                        <strong>计算步骤:</strong><br>
+                        1. norm1 = GroupNorm(x, groups=8)<br>
+                        　 μ = mean(x, dim=[2,3]), σ = std(x, dim=[2,3])<br>
+                        　 norm1 = γ(x-μ)/σ + β → [B, C_in, H, W]<br><br>
+
+                        2. act1 = SiLU(norm1) = norm1 * sigmoid(norm1)<br><br>
+
+                        3. conv1 = Conv2d(act1, W₁, b₁)<br>
+                        　 [B,C_in,H,W] ⊛ [C_out,C_in,3,3] → [B,C_out,H,W]<br><br>
+
+                        4. time_proj = Linear(t_emb): [B,512] → [B,C_out]<br>
+                        　 reshape: [B,C_out] → [B,C_out,1,1]<br>
+                        　 h = conv1 + time_proj → [B,C_out,H,W]<br><br>
+
+                        5. norm2 = GroupNorm(h) → [B,C_out,H,W]<br>
+                        　 act2 = SiLU(norm2) → [B,C_out,H,W]<br>
+                        　 conv2 = Conv2d(act2, W₂, b₂) → [B,C_out,H,W]<br><br>
+
+                        6. skip处理:<br>
+                        　 if C_in ≠ C_out:<br>
+                        　　 skip = Conv1×1(x): [B,C_in,H,W] → [B,C_out,H,W]<br>
+                        　 else: skip = x<br><br>
+
+                        7. output = conv2 + skip → [B,C_out,H,W]
+                    </div>
+                </div>
+
+                <div>
+                    <h3>🎯 注意力机制张量流动</h3>
+                    <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; font-family: monospace; font-size: 10px; line-height: 1.5;">
+                        <strong>输入:</strong> x [B, C, H, W] = [4, 128, 64, 64]<br>
+                        <strong>参数:</strong> heads=8, head_dim=C/heads=16<br><br>
+
+                        <strong>计算步骤:</strong><br>
+                        1. norm = GroupNorm(x) → [4, 128, 64, 64]<br><br>
+
+                        2. 重塑为序列:<br>
+                        　 flat = norm.view(4, 128, 4096)<br>
+                        　 seq = flat.transpose(1,2) → [4, 4096, 128]<br><br>
+
+                        3. QKV投影:<br>
+                        　 q = Linear_q(seq): [4,4096,128] × W_q[128,128]<br>
+                        　 k = Linear_k(seq): [4,4096,128] × W_k[128,128]<br>
+                        　 v = Linear_v(seq): [4,4096,128] × W_v[128,128]<br>
+                        　 → q,k,v: [4,4096,128]<br><br>
+
+                        4. 多头重塑:<br>
+                        　 q = q.view(4,4096,8,16).transpose(1,2) → [4,8,4096,16]<br>
+                        　 k,v 同样操作 → [4,8,4096,16]<br><br>
+
+                        5. 注意力计算:<br>
+                        　 scores = q @ k.transpose(-2,-1) / √16<br>
+                        　 [4,8,4096,16] @ [4,8,16,4096] → [4,8,4096,4096]<br>
+                        　 attn = softmax(scores, dim=-1)<br>
+                        　 out = attn @ v → [4,8,4096,16]<br><br>
+
+                        6. 多头合并:<br>
+                        　 out = out.transpose(1,2).contiguous()<br>
+                        　 out = out.view(4,4096,128)<br>
+                        　 out = Linear_out(out) → [4,4096,128]<br><br>
+
+                        7. 重塑并残差:<br>
+                        　 out = out.transpose(1,2).view(4,128,64,64)<br>
+                        　 result = x + out → [4,128,64,64]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complete Forward Pass Example -->
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #4ecdc4, #44a08d); color: white; padding: 25px; border-radius: 15px;">
+            <h2 style="margin-bottom: 20px;">🔄 完整前向传播示例</h2>
+
+            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 10px;">
+                <h3>训练时的完整数据流 (Batch=4, Image=64×64×3):</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <div>
+                        <h4 style="color: #ffeaa7;">🚀 步骤 1-3: 数据准备</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 10px;">
+                            <strong>1. 采样输入:</strong><br>
+                            x₀ ~ DataLoader → [4,3,64,64]<br>
+                            t ~ Uniform(1,1000) → [4,] (例: [150,320,890,45])<br>
+                            ε ~ 𝒩(0,I) → [4,3,64,64]<br><br>
+
+                            <strong>2. 查表α̅ₜ:</strong><br>
+                            α̅[150] = 0.8234 (预计算值)<br>
+                            α̅[320] = 0.6891<br>
+                            α̅[890] = 0.0567<br>
+                            α̅[45] = 0.9456<br><br>
+
+                            <strong>3. 前向扩散:</strong><br>
+                            √α̅ₜ → [4,1,1,1] (广播)<br>
+                            √(1-α̅ₜ) → [4,1,1,1]<br>
+                            xₜ = √α̅ₜ⊙x₀ + √(1-α̅ₜ)⊙ε<br>
+                            → xₜ [4,3,64,64]
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #fdcb6e;">🧠 步骤 4-6: 网络推理</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 10px;">
+                            <strong>4. 时间嵌入:</strong><br>
+                            t [4,] → sin/cos编码 → [4,128]<br>
+                            MLP: [4,128] → [4,512] → [4,512]<br><br>
+
+                            <strong>5. U-Net前向:</strong><br>
+                            输入: (xₜ[4,3,64,64], t_emb[4,512])<br>
+                            Input Conv: [4,3,64,64] → [4,128,64,64]<br>
+                            Encoder: 64→32→16→8 (保存skips)<br>
+                            Bottleneck: [4,512,8,8] + Attention<br>
+                            Decoder: 8→16→32→64 (使用skips)<br>
+                            Output: [4,3,64,64]<br><br>
+
+                            <strong>6. 噪声预测:</strong><br>
+                            ε̂ₜ = εθ(xₜ, t) → [4,3,64,64]
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #fab1a0;">📊 步骤 7-9: 损失计算</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 10px;">
+                            <strong>7. 损失计算:</strong><br>
+                            diff = ε - ε̂ₜ → [4,3,64,64]<br>
+                            squared = diff ** 2 → [4,3,64,64]<br>
+                            loss = mean(squared) → scalar<br><br>
+
+                            <strong>8. 反向传播:</strong><br>
+                            ∇_θ loss → 各层梯度<br>
+                            Conv层: ∇W, ∇b<br>
+                            时间嵌入: ∇W_time<br>
+                            注意力: ∇W_q, ∇W_k, ∇W_v<br><br>
+
+                            <strong>9. 参数更新:</strong><br>
+                            Adam优化器:<br>
+                            m_t = β₁m_{t-1} + (1-β₁)∇θ<br>
+                            v_t = β₂v_{t-1} + (1-β₂)(∇θ)²<br>
+                            θ = θ - η·m̂_t/(√v̂_t + ε)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sampling Process -->
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #fd79a8, #fdcb6e); color: white; padding: 25px; border-radius: 15px;">
+            <h2 style="margin-bottom: 20px;">🎨 推理采样过程</h2>
+
+            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 10px;">
+                <h3>DDPM采样算法 (生成新图像):</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div>
+                        <h4 style="color: #2d3436;">初始化阶段:</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 11px;">
+                            <strong>1. 纯噪声初始化:</strong><br>
+                            xₜ ~ 𝒩(0,I) → [B,3,64,64]<br>
+                            例: x₁₀₀₀ = torch.randn(4,3,64,64)<br><br>
+
+                            <strong>2. 预加载模型:</strong><br>
+                            εθ.eval() - 设置评估模式<br>
+                            α, α̅, β 预计算查找表<br>
+                            σₜ = √(βₜ(1-α̅ₜ₋₁)/(1-α̅ₜ))
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #2d3436;">迭代去噪:</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 11px;">
+                            <strong>For t = T, T-1, ..., 1:</strong><br><br>
+
+                            <strong>3. 噪声预测:</strong><br>
+                            t_batch = [t,t,t,t] → [4,]<br>
+                            ε̂ = εθ(xₜ, t_batch) → [4,3,64,64]<br><br>
+
+                            <strong>4. 均值计算:</strong><br>
+                            μₜ = (xₜ - βₜ/√(1-α̅ₜ)·ε̂)/√αₜ<br>
+                            → [4,3,64,64]<br><br>
+
+                            <strong>5. 添加噪声 (t>1):</strong><br>
+                            z ~ 𝒩(0,I) → [4,3,64,64]<br>
+                            xₜ₋₁ = μₜ + σₜ·z → [4,3,64,64]<br><br>
+
+                            <strong>6. 最终输出 (t=1):</strong><br>
+                            x₀ = μ₁ → [4,3,64,64] (生成图像)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Memory and Performance -->
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #a29bfe, #6c5ce7); color: white; padding: 25px; border-radius: 15px;">
+            <h2 style="margin-bottom: 20px;">📊 性能分析与优化</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>💾 内存使用分析</h3>
+                    <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; font-size: 11px;">
+                        <strong>前向传播内存:</strong><br>
+                        • 输入: 4×3×64²×4B = 196KB<br>
+                        • 特征图64×64: 4×128×64²×4B = 8MB<br>
+                        • 特征图32×32: 4×256×32²×4B = 4MB<br>
+                        • 特征图16×16: 4×512×16²×4B = 2MB<br>
+                        • 特征图8×8: 4×512×8²×4B = 512KB<br>
+                        • 注意力64×64: 4×8×4096²×4B = 2GB<br>
+                        • 梯度 (训练): ~2×前向内存<br><br>
+
+                        <strong>峰值内存:</strong> ~6GB (FP32)<br>
+                        <strong>优化后:</strong> ~3GB (FP16 + 梯度检查点)
+                    </div>
+                </div>
+
+                <div>
+                    <h3>⚡ 计算复杂度</h3>
+                    <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; font-size: 11px;">
+                        <strong>FLOPs分析 (单次前向):</strong><br>
+                        • Input Conv: 4×3×128×64²×9 = 94M<br>
+                        • ResNet Blocks: ~500M<br>
+                        • Self-Attention: 4×8×4096²×16 = 8.6B<br>
+                        • Skip Connections: ~50M<br>
+                        • Total: ~9.2B FLOPs<br><br>
+
+                        <strong>训练时间 (V100):</strong><br>
+                        • 单步: ~100ms<br>
+                        • 完整采样: ~100s (1000步)<br>
+                        • DDIM快速采样: ~5s (50步)
+                    </div>
+                </div>
+
+                <div>
+                    <h3>🎛️ 超参数设置</h3>
+                    <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; font-size: 11px;">
+                        <strong>网络参数:</strong><br>
+                        • Base channels: 128<br>
+                        • Channel multipliers: [1,2,4,4]<br>
+                        • Attention resolutions: [16,8]<br>
+                        • ResNet blocks per level: 2<br>
+                        • Dropout: 0.1<br><br>
+
+                        <strong>训练参数:</strong><br>
+                        • Learning rate: 2e-4<br>
+                        • Batch size: 4 (示例)<br>
+                        • EMA decay: 0.9999<br>
+                        • Total timesteps: T=1000<br>
+                        • Noise schedule: linear
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mathematical Foundations -->
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 25px; border-radius: 15px;">
+            <h2 style="margin-bottom: 20px;">📐 数学基础与核心公式</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                <div>
+                    <h3>🔢 核心概率公式</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; font-family: monospace; font-size: 11px; line-height: 1.6;">
+                        <strong>前向过程 (加噪):</strong><br>
+                        q(xₜ|xₜ₋₁) = 𝒩(xₜ; √(1-βₜ)xₜ₋₁, βₜI)<br>
+                        q(xₜ|x₀) = 𝒩(xₜ; √α̅ₜx₀, (1-α̅ₜ)I)<br><br>
+
+                        <strong>反向过程 (去噪):</strong><br>
+                        pθ(xₜ₋₁|xₜ) = 𝒩(xₜ₋₁; μθ(xₜ,t), σₜ²I)<br>
+                        μθ(xₜ,t) = 1/√αₜ(xₜ - βₜ/√(1-α̅ₜ)εθ(xₜ,t))<br><br>
+
+                        <strong>变分下界:</strong><br>
+                        𝔼[-log pθ(x₀)] ≤ 𝔼[Lₜ] + 𝔼[L₀] + 𝔼[Lₜ]<br>
+                        其中 Lₜ = DKL(q(xₜ₋₁|xₜ,x₀)||pθ(xₜ₋₁|xₜ))
+                    </div>
+                </div>
+
+                <div>
+                    <h3>⚙️ 实现中的张量操作</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; font-family: monospace; font-size: 11px; line-height: 1.6;">
+                        <strong>重参数化采样:</strong><br>
+                        # 预计算系数<br>
+                        sqrt_alpha_bar = √α̅ₜ  # [4,1,1,1]<br>
+                        sqrt_one_minus_alpha_bar = √(1-α̅ₜ)  # [4,1,1,1]<br>
+
+                        # 前向扩散<br>
+                        noise = torch.randn_like(x0)  # [4,3,64,64]<br>
+                        x_t = sqrt_alpha_bar * x0 + sqrt_one_minus_alpha_bar * noise<br><br>
+
+                        <strong>网络预测:</strong><br>
+                        # 时间嵌入<br>
+                        t_emb = time_embedding(t)  # [4,512]<br>
+
+                        # U-Net推理<br>
+                        eps_pred = unet(x_t, t_emb)  # [4,3,64,64]<br>
+
+                        # 损失计算<br>
+                        loss = F.mse_loss(noise, eps_pred)  # scalar
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Controls -->
+        <div style="margin-top: 30px; text-align: center; padding: 20px; background: linear-gradient(135deg, #74b9ff, #0984e3); border-radius: 15px;">
+            <h3 style="margin-bottom: 20px; color: white;">🎮 交互式架构浏览</h3>
+            <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;">
+                <button class="interactive-btn btn-forward" onclick="highlightPath('forward')" id="btn-forward">
+                    📈 前向扩散过程
+                </button>
+                <button class="interactive-btn btn-reverse" onclick="highlightPath('reverse')" id="btn-reverse">
+                    📉 反向去噪过程
+                </button>
+                <button class="interactive-btn btn-unet" onclick="highlightPath('unet')" id="btn-unet">
+                    🏗️ U-Net架构
+                </button>
+                <button class="interactive-btn btn-reset" onclick="resetHighlight()" id="btn-reset">
+                    🔄 重置视图
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3 style="margin-top: 0; color: #2c3e50; margin-bottom: 15px;">📚 图例说明</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4 style="color: #e74c3c;">张量与操作</h4>
+                    <div class="tensor-box" style="margin: 5px 0;">张量形状 [B,C,H,W]</div>
+                    <div class="operation-box" style="margin: 5px 0;">数学操作</div>
+                    <div class="layer-box" style="margin: 5px 0; display: block;">网络层模块</div>
+                </div>
+                <div>
+                    <h4 style="color: #3498db;">特殊模块</h4>
+                    <div class="attention-box" style="margin: 5px 0; display: block;">自注意力机制</div>
+                    <div class="time-embed-box" style="margin: 5px 0; display: block;">时间信息嵌入</div>
+                    <div style="margin: 8px 0; font-size: 12px;">
+                        <span style="color: #f39c12;">⚡</span> 跳跃连接路径
+                    </div>
+                </div>
+                <div>
+                    <h4 style="color: #27ae60;">符号说明</h4>
+                    <div style="font-size: 11px; line-height: 1.6;">
+                        <strong>B:</strong> Batch Size (批量大小)<br>
+                        <strong>C:</strong> Channels (通道数)<br>
+                        <strong>H:</strong> Height (图像高度)<br>
+                        <strong>W:</strong> Width (图像宽度)<br>
+                        <strong>T:</strong> Total timesteps (总时间步)<br>
+                        <strong>⊛:</strong> 卷积操作<br>
+                        <strong>⊙:</strong> 元素乘法
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #bdc3c7; font-size: 11px; color: #7f8c8d;">
+                💡 <strong>使用提示:</strong> 悬停查看详细信息 | 点击按钮高亮不同部分 | 滚动U-Net区域查看完整架构
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentHighlight = null;
+
+        function highlightPath(type) {
+            // Reset previous highlights
+            resetHighlight();
+
+            const sections = document.querySelectorAll('.process-section');
+            const buttons = document.querySelectorAll('.interactive-btn');
+
+            // Add click animation to button
+            const clickedBtn = document.getElementById(`btn-${type}`);
+            if (clickedBtn) {
+                clickedBtn.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    clickedBtn.style.transform = 'scale(1)';
+                }, 150);
+            }
+
+            // Dim all sections first
+            sections.forEach(section => {
+                section.classList.add('dimmed');
+            });
+
+            // Highlight specific section
+            let targetSection;
+            switch(type) {
+                case 'forward':
+                    targetSection = document.getElementById('forward-section');
+                    targetSection.style.borderColor = '#e74c3c';
+                    targetSection.style.boxShadow = '0 0 30px rgba(231, 76, 60, 0.6)';
+                    break;
+                case 'reverse':
+                    targetSection = document.getElementById('reverse-section');
+                    targetSection.style.borderColor = '#27ae60';
+                    targetSection.style.boxShadow = '0 0 30px rgba(39, 174, 96, 0.6)';
+                    break;
+                case 'unet':
+                    targetSection = document.getElementById('unet-section');
+                    targetSection.style.borderColor = '#3498db';
+                    targetSection.style.boxShadow = '0 0 30px rgba(52, 152, 219, 0.6)';
+                    break;
+            }
+
+            if (targetSection) {
+                targetSection.classList.remove('dimmed');
+                targetSection.classList.add('highlighted');
+                currentHighlight = type;
+
+                // Scroll into view smoothly
+                targetSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }
+
+        function resetHighlight() {
+            const sections = document.querySelectorAll('.process-section');
+            const buttons = document.querySelectorAll('.interactive-btn');
+
+            // Add click animation to reset button
+            const resetBtn = document.getElementById('btn-reset');
+            if (resetBtn) {
+                resetBtn.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    resetBtn.style.transform = 'scale(1)';
+                }, 150);
+            }
+
+            sections.forEach(section => {
+                section.classList.remove('highlighted', 'dimmed');
+                section.style.borderColor = '';
+                section.style.boxShadow = '';
+                section.style.transform = '';
+                section.style.opacity = '';
+            });
+
+            currentHighlight = null;
+        }
+
+        // Add ripple effect to buttons
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const circle = document.createElement('span');
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+            circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+            circle.classList.add('ripple');
+
+            const ripple = button.getElementsByClassName('ripple')[0];
+            if (ripple) {
+                ripple.remove();
+            }
+
+            button.appendChild(circle);
+        }
+
+        // Add event listeners for enhanced interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add ripple effect to all buttons
+            const buttons = document.querySelectorAll('.interactive-btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', createRipple);
+            });
+
+            // Add hover animations to tensor boxes
+            const tensorBoxes = document.querySelectorAll('.tensor-box, .operation-box');
+            tensorBoxes.forEach(box => {
+                box.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05) translateY(-2px)';
+                    this.style.boxShadow = '0 6px 12px rgba(0,0,0,0.3)';
+                });
+
+                box.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1) translateY(0)';
+                    this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                });
+            });
+
+            // Add smooth scrolling for layer boxes
+            const layerBoxes = document.querySelectorAll('.layer-box, .attention-box, .time-embed-box');
+            layerBoxes.forEach(box => {
+                box.addEventListener('click', function() {
+                    this.style.transform = 'scale(1.02)';
+                    this.style.transition = 'all 0.2s ease';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 200);
+                });
+            });
+        });
+
+        // Add CSS for ripple effect
+        const style = document.createElement('style');
+        style.textContent = `
+            .ripple {
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.6);
+                transform: scale(0);
+                animation: ripple-animation 0.6s linear;
+                pointer-events: none;
+            }
+
+            @keyframes ripple-animation {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+
+            .interactive-btn {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .pulse-animation {
+                animation: pulse-glow 1.5s ease-in-out infinite;
+            }
+
+            @keyframes pulse-glow {
+                0%, 100% {
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                }
+                50% {
+                    box-shadow: 0 8px 16px rgba(52, 152, 219, 0.4);
+                }
+            }
+
+            .section-transition {
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Add section transition classes
+        document.querySelectorAll('.process-section').forEach(section => {
+            section.classList.add('section-transition');
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case '1':
+                    highlightPath('forward');
+                    break;
+                case '2':
+                    highlightPath('reverse');
+                    break;
+                case '3':
+                    highlightPath('unet');
+                    break;
+                case 'Escape':
+                case '0':
+                    resetHighlight();
+                    break;
+            }
+        });
+
+        // Add auto-tour functionality
+        function startAutoTour() {
+            const sections = ['forward', 'reverse', 'unet'];
+            let currentIndex = 0;
+
+            function nextSection() {
+                if (currentIndex < sections.length) {
+                    highlightPath(sections[currentIndex]);
+                    currentIndex++;
+                    setTimeout(nextSection, 3000);
+                } else {
+                    resetHighlight();
+                }
+            }
+
+            nextSection();
+        }
+
+        // Add tour button
+        const controlsDiv = document.querySelector('.interactive-btn').parentElement;
+        const tourBtn = document.createElement('button');
+        tourBtn.className = 'interactive-btn';
+        tourBtn.style.background = 'linear-gradient(135deg, #00b894, #00a085)';
+        tourBtn.innerHTML = '🎬 自动演示';
+        tourBtn.onclick = startAutoTour;
+        controlsDiv.appendChild(tourBtn);
+
+        // Add performance monitoring
+        let performanceMetrics = {
+            renderTime: 0,
+            interactionCount: 0
+        };
+
+        function trackInteraction() {
+            performanceMetrics.interactionCount++;
+            console.log(`交互次数: ${performanceMetrics.interactionCount}`);
+        }
+
+        // Track render time
+        const startTime = performance.now();
+        window.addEventListener('load', function() {
+            performanceMetrics.renderTime = performance.now() - startTime;
+            console.log(`页面渲染时间: ${performanceMetrics.renderTime.toFixed(2)}ms`);
+        });
+
+        // Add interaction tracking
+        document.querySelectorAll('.interactive-btn').forEach(btn => {
+            btn.addEventListener('click', trackInteraction);
+        });
+
+        // Add smooth entrance animation
+        function animateEntrance() {
+            const sections = document.querySelectorAll('.process-section');
+            sections.forEach((section, index) => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(30px)';
+
+                setTimeout(() => {
+                    section.style.transition = 'all 0.6s ease';
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        }
+
+        // Start entrance animation when page loads
+        window.addEventListener('load', animateEntrance);
+
+        // Add accessibility features
+        document.addEventListener('keydown', function(event) {
+            if (event.altKey) {
+                switch(event.key) {
+                    case 'f':
+                        highlightPath('forward');
+                        event.preventDefault();
+                        break;
+                    case 'r':
+                        highlightPath('reverse');
+                        event.preventDefault();
+                        break;
+                    case 'u':
+                        highlightPath('unet');
+                        event.preventDefault();
+                        break;
+                }
+            }
+        });
+
+        // Add help tooltip
+        function showHelp() {
+            alert(`🎯 DDPM架构图使用指南:\n\n` +
+                  `🖱️ 鼠标操作:\n` +
+                  `• 悬停在张量框上查看详细信息\n` +
+                  `• 点击按钮高亮不同部分\n` +
+                  `• 点击模块查看动画效果\n\n` +
+                  `⌨️ 键盘快捷键:\n` +
+                  `• 数字键1: 前向过程\n` +
+                  `• 数字键2: 反向过程\n` +
+                  `• 数字键3: U-Net架构\n` +
+                  `• ESC或0: 重置视图\n\n` +
+                  `🎬 其他功能:\n` +
+                  `• 自动演示: 3秒间隔自动切换\n` +
+                  `• 无障碍支持: Alt+F/R/U快捷键`);
+        }
+
+        // Add help button
+        const helpBtn = document.createElement('button');
+        helpBtn.className = 'interactive-btn';
+        helpBtn.style.background = 'linear-gradient(135deg, #ffeaa7, #fab1a0)';
+        helpBtn.style.color = '#2d3436';
+        helpBtn.innerHTML = '❓ 使用帮助';
+        helpBtn.onclick = showHelp;
+        controlsDiv.appendChild(helpBtn);
+    </script>
+</body>
+</html>

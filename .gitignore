@@ -1,0 +1,6 @@
+Transformer/src_basic_transformer/transformer_example.pth
+idea/vcs.xml
+/diffusion/src_diffusion/checkpoints/*
+/data
+*.iml
+*.xml
