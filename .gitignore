@@ -4,3 +4,4 @@ idea/vcs.xml
 /data
 *.iml
 *.xml
+*.gz
